@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block css %}
+        <link rel="stylesheet" href="{% static 'css/default.css' %}">
+{% endblock %}
+
+{% block title %}SeniorGuard{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Logo -->
+    <div class="text-center mb-4">
+        <img src="{% static 'imagens/seniorguard.svg' %}" alt="SeniorGuard" style="height: 120px;" />
+    </div>
+
+    <div class="text-center mb-2 text-muted">Dispositivos IoT</div>
+
+    <div class="d-flex flex-wrap justify-content-center gap-4">
+        {% for device in devices %}
+        <div class="card bg-white bg-body-secondary shadow border-0 rounded" style="width: 24rem;">
+            <div class="card-body d-flex flex-column h-100">
+                <div class="device-name-container mb-3">
+                    <h5 class="card-title fw-bold fs-5 mb-0 device-name">{{device.name}}</h5>
+                        <div>
+                            <i class="bi bi-trash-fill text-danger delete-icon" role="button" title="Apagar device" data-mac="{{device.mac_address}}"></i>
+                            <i class="bi bi-pencil-fill text-primary edit-icon" role="button" title="Editar nome" data-mac="{{device.mac_address}}"></i>
+                        </div>
+                    <input class="form-control edit-input" value="{{device.name}}">
+                </div>
+                <div class="edit-actions">
+                    <button class="btn btn btn-success save-btn">Salvar</button>
+                    <button class="btn btn btn-secondary cancel-btn">Cancelar</button>
+                </div>
+                <div class="mb-1 text-muted"><i class="bi bi-cpu-fill me-2"></i><span class="lh-sm fw-normal">{{device.mac_address}}</span></div>
+                <div class="mb-1 text-muted">
+                    <i class="bi bi-calendar-event me-2"></i>
+                    <span class="lh-sm fw-normal">Criado em {{ device.created_at|date:"d/m/Y H:i" }}</span>
+                </div>
+                <div class="mb-3 text-muted">
+                    <i class="bi bi-clock me-2"></i>
+                    <span class="lh-sm fw-normal">Atualizado {{device.updated_at|timesince}} atrás</span>
+                </div>
+                <div class="d-flex flex-row justify-content-end align-items-center">
+                    <i class="bi bi-qr-code text-dark me-2 qrcode-icon" role="button"
+                    title="Gerar QRCode" data-mac="{{device.mac_address}}"></i>
+
+                    <a class="btn btn-success mb-0 me-0" href="{% url 'dashboard' id=device.mac_address %}">
+                        Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal de Confirmação -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirmar exclusão</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        Deseja apagar este dispositivo e todos os dados de sensores associados?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Apagar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal QRCode -->
+<div class="modal fade" id="qrcodeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center">
+            <div class="modal-header">
+                <h5 class="modal-title">QRCode do Dashboard</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <img src="{% static 'imagens/seniorguard.svg' %}" alt="SeniorGuard"/>
+                </div>
+                <img id="qrcodeImage" src="" alt="QRCode" class="img-fluid"/>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.querySelectorAll('.edit-icon').forEach(icon => {
+        icon.addEventListener('click', () => {
+            const container = icon.closest('.device-name-container');
+            const nameEl = container.querySelector('.device-name');
+            const input = container.querySelector('.edit-input');
+            const actions = container.parentElement.querySelector('.edit-actions');
+
+            nameEl.style.display = 'none';
+            icon.style.display = 'none';
+            input.style.display = 'block';
+            actions.style.display = 'flex';
+            input.focus();
+
+            const originalValue = input.value;
+
+            function cancelEdit() {
+                input.value = originalValue;
+                nameEl.style.display = '';
+                icon.style.display = '';
+                input.style.display = 'none';
+                actions.style.display = 'none';
+            }
+
+            function saveEdit() {
+                const newName = input.value.trim();
+                if (!newName) return;
+                fetch(`/device/${icon.dataset.mac}/edit_name/`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+                    body: JSON.stringify({name: newName})
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        nameEl.textContent = data.name;
+                        nameEl.style.display = '';
+                        icon.style.display = '';
+                        input.style.display = 'none';
+                        actions.style.display = 'none';
+                    } else {
+                        alert(data.error || 'Erro ao atualizar');
+                    }
+                })
+                .catch(() => alert('Erro de conexão'));
+            }
+
+            actions.querySelector('.cancel-btn').onclick = cancelEdit;
+            actions.querySelector('.save-btn').onclick = saveEdit;
+
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    saveEdit();
+                } else if (e.key === 'Escape') {
+                    cancelEdit();
+                }
+            };
+        });
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Verifica se o cookie começa com o nome desejado
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    let macToDelete = null;
+
+    document.querySelectorAll('.delete-icon').forEach(icon => {
+        icon.addEventListener('click', () => {
+            macToDelete = icon.dataset.mac;
+            const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+            modal.show();
+        });
+    });
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
+        if (!macToDelete) return;
+        fetch(`/device/${macToDelete}/delete/`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')}
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // recarrega lista após apagar
+            } else {
+                alert(data.error || 'Erro ao apagar');
+            }
+        })
+        .catch(() => alert('Erro de conexão'));
+    });
+
+    document.querySelectorAll('.qrcode-icon').forEach(icon => {
+        icon.addEventListener('click', () => {
+            const mac = icon.dataset.mac;
+            fetch(`/device/${mac}/qrcode/`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('qrcodeImage').src = "data:image/png;base64," + data.qrcode;
+                        const modal = new bootstrap.Modal(document.getElementById('qrcodeModal'));
+                        modal.show();
+                    } else {
+                        alert(data.error || 'Erro ao gerar QRCode');
+                    }
+                })
+                .catch(() => alert('Erro de conexão'));
+        });
+    });
+
+</script>
+{% endblock %}

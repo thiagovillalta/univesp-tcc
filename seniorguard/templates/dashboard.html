@@ -1,0 +1,404 @@
+
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block css %}
+	<link rel="stylesheet" href="{% static 'css/default.css' %}">
+{% endblock %}
+
+{% block title %}seniorguard{% endblock %}
+
+{% block content %}
+
+  <div class="container py-4">
+
+    <!-- Logo -->
+    <div class="text-center mb-3">
+      <img src="{% static 'imagens/seniorguard_small.svg' %}" alt="SeniorGuard" style="height: 100px;" />
+    </div>
+
+    <!-- Caminho de pão -->
+    <div class="text-center mb-2 fs-5"><a href="{% url 'home' %}">Home</a> <i class="bi bi-chevron-right"></i><span class="fw-bold fs-5"> {{ device.name }}</span></div>
+
+    <!-- Última atualização -->
+    <p class="text-center mb-3">
+      <i id="update-icon" class="bi {% if updated_now %}bi-clock-fill text-muted{% else %}bi-clock{% endif %}"></i>
+      <span id="last-updated" class="lh-sm fw-normal">
+        Atualizado {% if updated_now %}agora{% else %}{{ device.updated_at|timesince }} atrás{% endif %}
+      </span>
+    </p>
+
+    <!-- Sensores -->
+    <div class="d-flex flex-wrap justify-content-center gap-4">
+    {% for sensor in sensors %}
+      <div class="card bg-body-secondary shadow border-4 border-light-subtle sensor-card"
+          style="width: 24rem;"
+            data-sensor-type="{{ sensor.sensor_type.name }}"
+            data-value="{{ sensor.value }}"
+            data-min-value="{{ sensor.sensor_type.min_value }}"
+            data-max-value="{{ sensor.sensor_type.max_value }}">
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex flex-row">
+              <div class="w-70 d-flex flex-column" >
+                <div class="d-flex flex-row align-items-center">
+                  <div class="d-flex fs-2 me-1">
+                    {% with sensor.sensor_type.name as name %}
+                      {% if name == "tmpA" %}
+                        <i class="bi bi-thermometer-half"></i>
+                      {% elif name == "umdA" %}
+                        <i class="bi bi-droplet-half"></i>
+                      {% elif name == "rndA" %}
+                        <i class="bi bi-volume-up-fill"></i>
+                      {% elif name == "phA" %}
+                        <i class="bi bi-beaker"></i>
+                      {% elif name == "lhtA" %}
+                        <i class="bi bi-brightness-high"></i>
+                      {% elif name == "levS" %}
+                        <i class="bi bi-water"></i>
+                      {% elif name == "tmpS" %}
+                        <i class="bi bi-thermometer-half"></i>
+                      {% else %}
+                        <i class="bi bi-speedometer2"></i>
+                      {% endif %}
+                    {% endwith %}
+                  </div>                
+                  <div class="me-3" style="font-size: 36px">
+                    <span class="sensor-value">{{ sensor.value|floatformat:1 }}</span>{{ sensor.sensor_type.unit }}
+                  </div>
+                  <div class="fs-3 d-flex flex-row align-items-center">
+                    {% if sensor.value >= sensor.sensor_type.min_value and sensor.value <= sensor.sensor_type.max_value %}
+                      <i class="bi bi-check-circle-fill icon-warning me-2" style="color: #28a745;"></i>
+                      <div class="status-label d-flex flex-column text-uppercase fs-7 lh-sm text-secondary">
+                        <small>Dentro</small>
+                        <small>da faixa</small>
+                      </div>
+                    {% elif sensor.value > sensor.sensor_type.max_value %}
+                      <i class="bi bi-arrow-up-circle-fill icon-warning me-2" style="color: #e74c3c;"></i>
+                      <div class="status-label d-flex flex-column text-uppercase fs-7 lh-sm text-secondary">
+                        <small>Acima</small>
+                        <small>da faixa</small>
+                      </div>
+                    {% elif sensor.value < sensor.sensor_type.min_value %}
+                      <i class="bi bi-arrow-down-circle-fill icon-warning me-2" style="color: #3498db;"></i>
+                      <div class="status-label d-flex flex-column text-uppercase fs-7 lh-sm text-secondary">
+                        <small>Abaixo</small>
+                        <small>da faixa</small>
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="fs-6 text-muted lh-sm pe-2">{{ sensor.sensor_type.description }}</div>
+              </div>
+              <div class="w-20 d-flex flex-column justify-content-center align-items-center border-start border-secondary-subtle">
+                <div class="ms-3">
+                <div class="fs-6 text-muted lh-sm"><small>Máx</small></div>
+                <div class="fs-6 fw-bold">{{ sensor.sensor_type.max_value|floatformat:0 }}{{ sensor.sensor_type.unit }}</div>
+                <div class="fs-6 text-muted lh-sm"><small>Mín</small></div>
+                <div class="fs-6 fw-bold">{{ sensor.sensor_type.min_value|floatformat:0 }}{{ sensor.sensor_type.unit }}</div>
+                </div>
+              </div>
+            </div>
+            <!-- Gráfico das últimas 12h -->
+            {% with history=sensor_history|get_item:sensor.sensor_type.name %}
+              {% with parsed=history|from_json %}
+                {% if parsed|length > 1 %}
+                  <div class="mt-3 mb-0">
+                    <canvas id="chart-{{ sensor.sensor_type.name }}" height="60" style="max-height:80px;width:100%;display:block;"></canvas>
+                  </div>
+                {% else %}
+                  <div class="mt-4 mb-0 text-center text-muted" style="font-size:0.9em;">Gráfico sem dados suficientes</div>
+                {% endif %}
+              {% endwith %}
+            {% endwith %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  <!-- Scripts JSON de histórico dos sensores -->
+  {% for sensor in sensors %}
+    {% with name=sensor.sensor_type.name %}
+      {% with history=sensor_history|get_item:name %}
+        {% if history %}
+          <script id="sensor-history-{{ name }}" type="application/json">{{ history|safe }}</script>
+        {% endif %}
+      {% endwith %}
+    {% endwith %}
+  {% endfor %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+  <!-- Inicialização dos gráficos -->
+  {{ sensor_names|json_script:"sensor-names" }}
+  <script>
+    const sensorNames = JSON.parse(
+      document.getElementById('sensor-names').textContent
+    );
+    document.addEventListener('DOMContentLoaded', function() {
+      sensorNames.forEach(function(name) {
+        var historyData = [];
+        try {
+          var historyElement = document.getElementById('sensor-history-' + name);
+          if (historyElement && historyElement.textContent.trim() !== "") {
+            historyData = JSON.parse(historyElement.textContent);
+          }
+        } catch(e) {}
+        if (!historyData || historyData.length === 0) return;
+        var values = historyData.map(function(e) {
+          return { x: e.created_at, y: e.value };
+        });
+        var canvas = document.getElementById('chart-' + name);
+        // Destroi instância anterior se existir
+        if (canvas && canvas._chartInstance) {
+          canvas._chartInstance.destroy();
+        }
+        if (canvas) {
+          var ctx = canvas.getContext('2d');
+          var chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+              datasets: [{
+                label: 'Leitura',
+                data: values,
+                fill: true,
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13,110,253,0.1)',
+                tension: 0.15,
+                pointRadius: 0,
+                spanGaps: true,
+              }]
+            },
+            options: {
+              plugins: { legend: { display: false } },
+              scales: {
+                x: {
+                  type: 'time',
+                  time: {
+                    unit: 'hour',
+                    stepSize: 1,  // marcações a cada 10 min
+                    displayFormats: { hour: 'HH' },
+                    tooltipFormat: 'dd/MM HH:mm',
+                  },
+                  ticks: {
+                    source: 'auto',            // usa dados para alinhamento
+                    autoSkip: true,
+                    major: { enabled: true },  // destaca as horas cheias
+                    // Força formato 24h com 00 para meia-noite
+                    callback: function(value, index, ticks) {
+                      // value vem como timestamp, então usamos dayjs/moment ou Intl.DateTimeFormat
+                      const date = new Date(value);
+                      return date.toLocaleTimeString('pt-BR', { hour12: false, hour: '2-digit' });
+                    },
+                  },
+                  grid: { display: false },
+                },
+                y: { display: false }
+              },
+              elements: { line: { borderWidth: 2 } },
+              responsive: true,
+              maintainAspectRatio: true,
+              aspectRatio: 4,
+            }
+          });
+          // Força recalcular limites do eixo X
+          if (chartInstance.options && chartInstance.options.scales && chartInstance.options.scales.x) {
+            chartInstance.options.scales.x.min = undefined;
+            chartInstance.options.scales.x.max = undefined;
+          }
+          chartInstance.update();
+          // Salva instância do gráfico para atualização dinâmica
+          canvas._chartInstance = chartInstance;
+        }
+      });
+    });
+  </script>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+
+    // Conecta ao WebSocket do dashboard
+    const deviceMac = "{{ device.mac_address }}".replace(/:/g, '-');
+    const dashboardSocket = new WebSocket(
+      wsScheme + '://' + window.location.host + '/ws/dashboard/' + deviceMac + '/'
+    );
+  
+    // Manipulador de mensagens recebidas
+    dashboardSocket.onmessage = function(e) {
+      const data = JSON.parse(e.data);
+      if (data.type === 'device_update') {
+        deviceUpdate(data.updated_now, data.updated_at);
+      } else if (data.type === 'sensor_update') {
+        sensorsUpdate(data.sensor_type, data.value, data.status);
+      }
+    };
+
+    dashboardSocket.onclose = function(e) {
+      // Tentar reconectar após 5 segundos
+      setTimeout(() => {
+        location.reload();
+      }, 5000);
+    };
+
+    // Variável global para armazenar o estado
+    let isRecentlyUpdated = "{% if updated_now %}true{% else %}false{% endif %}";
+
+    function formatarTempoDecorrido(dataString) {
+      const dataAtualizacao = new Date(dataString);
+      const agora = new Date();
+      const diferenca = agora - dataAtualizacao;
+      const minutos = Math.floor(diferenca / (1000 * 60));
+      const horas = Math.floor(minutos / 60);
+      const minutosRestantes = minutos % 60;
+      
+      if (isRecentlyUpdated && minutos < 1) {
+        return 'agora';
+      } else if (horas < 1) {
+        return `${minutos} minuto${minutos !== 1 ? 's' : ''} atrás`;
+      } else {
+        return `${horas} hora${horas !== 1 ? 's' : ''}${minutosRestantes > 0 ? `, ${minutosRestantes} minuto${minutosRestantes !== 1 ? 's' : ''}` : ''} atrás`;
+      }
+    }
+
+    const lastUpdatedElement = document.getElementById('last-updated');
+    const lastUpdatedIcon = document.getElementById('update-icon');
+    let lastUpdateTime = "{{ device.updated_at|date:'Y-m-d H:i:s' }}";
+
+    // Atualização periódica
+    function updateTimeDisplay() {
+      const formattedTime = formatarTempoDecorrido(lastUpdateTime);
+      lastUpdatedElement.textContent = `Atualizado ${formattedTime}`;
+      
+      // Atualiza o ícone baseado no tempo decorrido
+      const agora = new Date();
+      const diffInMinutes = (agora - new Date(lastUpdateTime)) / (1000 * 60);
+      
+      if (diffInMinutes < 1 && isRecentlyUpdated) {
+        lastUpdatedIcon.classList.remove('bi-clock');
+        lastUpdatedIcon.classList.add('bi-clock-fill', 'text-muted');
+      } else {
+        lastUpdatedIcon.classList.remove('bi-clock-fill', 'text-muted');
+        lastUpdatedIcon.classList.add('bi-clock');
+        isRecentlyUpdated = false; // Reseta o estado após 1 minuto
+      }
+    }
+
+    // Configurar atualização a cada 30 segundos
+    setInterval(updateTimeDisplay, 30000);
+    updateTimeDisplay(); // Executa imediatamente ao carregar
+
+    // Função para atualização via WebSocket
+    function deviceUpdate(updatedNow, updatedAt) {
+      if (updatedNow) {
+        isRecentlyUpdated = true;
+        lastUpdateTime = updatedAt || new Date().toISOString();
+        lastUpdatedElement.textContent = 'Atualizado agora';
+        lastUpdatedIcon.classList.remove('bi-clock');
+        lastUpdatedIcon.classList.add('bi-clock-fill', 'text-muted');
+        
+        // Agenda próxima atualização normal
+        setTimeout(updateTimeDisplay, 60000);
+      } else if (updatedAt) {
+        lastUpdateTime = updatedAt;
+        updateTimeDisplay();
+      }
+    }
+
+    // Inicialização correta do ícone
+    if (isRecentlyUpdated) {
+      lastUpdatedIcon.classList.remove('bi-clock');
+      lastUpdatedIcon.classList.add('bi-clock-fill', 'text-muted');
+    }
+
+    // Função para atualizar a exibição do sensor
+    function sensorsUpdate(sensorType, value, status) {
+      // Encontra todos os cards de sensores
+      const sensorCards = document.querySelectorAll('.sensor-card');
+      sensorCards.forEach(card => {
+        const cardSensorType = card.dataset.sensorType;
+        if (cardSensorType === sensorType) {
+          // Atualiza o valor
+          const valueElement = card.querySelector('.sensor-value');
+          if (valueElement) {
+            valueElement.textContent = value.toFixed(1).replace('.', ',');
+          }
+          // Atualiza ícone de alerta
+          const minValue = parseFloat(card.dataset.minValue);
+          const maxValue = parseFloat(card.dataset.maxValue);
+
+          const iconElement = card.querySelector('.icon-warning');
+          const labelElement = card.querySelector('.status-label');
+
+          iconElement.className = '';
+          labelElement.innerHTML = '';
+
+          if (value >= minValue && value <= maxValue) {
+            iconElement.classList.add('bi', 'bi-check-circle-fill', 'icon-warning', 'me-2');
+            iconElement.style.color = '#28a745'; // verde
+            labelElement.innerHTML = '<small>Dentro</small><small>da faixa</small>';
+          } else if (value > maxValue) {
+            iconElement.classList.add('bi', 'bi-arrow-up-circle-fill', 'icon-warning', 'me-2');
+            iconElement.style.color = '#e74c3c'; // vermelho
+            labelElement.innerHTML = '<small>Acima</small><small>da faixa</small>';
+          } else if (value < minValue) {
+            iconElement.classList.add('bi', 'bi-arrow-down-circle-fill', 'icon-warning', 'me-2');
+            iconElement.style.color = '#3498db'; // azul
+            labelElement.innerHTML = '<small>Abaixo</small><small>da faixa</small>';
+          }
+
+          // Atualiza o gráfico buscando histórico real via AJAX
+          const chartId = 'chart-' + sensorType;
+          const chartCanvas = document.getElementById(chartId);
+          if (chartCanvas && chartCanvas._chartInstance) {
+            const chart = chartCanvas._chartInstance;
+            // Adiciona novo ponto imediatamente
+            const now = new Date();
+            chart.data.datasets[0].data.push({ x: now.toISOString(), y: value });
+            // Mantém no máximo 50 pontos
+            if (chart.data.datasets[0].data.length > 50) {
+              chart.data.datasets[0].data = chart.data.datasets[0].data.slice(-50);
+            }
+            chart.update();
+            // Em seguida, sincroniza histórico via AJAX
+            const mac = "{{ device.mac_address }}".replace(/:/g, '-');
+            const url = `/api/sensor-history/${mac}/${sensorType}/`;
+            fetch(url)
+              .then(resp => resp.json())
+              .then(data => {
+                if (data && data.history) {
+                  // Log dos dados recebidos
+                  // console.log removido para produção
+                  // Limpa completamente o dataset antes de redesenhar
+                  chart.data.datasets[0].data = [];
+                  const newData = data.history.map(e => ({ x: e.created_at, y: e.value }));
+                  newData.sort((a, b) => new Date(a.x) - new Date(b.x));
+                  chart.data.datasets[0].data = newData;
+                  // Mantém no máximo 50 pontos
+                  if (chart.data.datasets[0].data.length > 50) {
+                    chart.data.datasets[0].data = chart.data.datasets[0].data.slice(-50);
+                  }
+                  chart.update();
+                  // Log dos limites do eixo X
+                  // Log do eixo X removido para produção
+                }
+              })
+              .catch(err => {
+                // console.error removido para produção
+              });
+          }
+
+          // Efeito visual de atualização
+          card.classList.add('border-warning');
+          card.classList.remove('border-light-subtle');
+          setTimeout(() => {
+            card.classList.add('border-light-subtle');
+            card.classList.remove('border-warning');
+          }, 1000);
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

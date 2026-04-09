@@ -1,8 +1,8 @@
-# univesp-pi-6
+# univesp-tcc
 
-## UNIVESP, 2025
+## UNIVESP, 2026
 
-Projeto Integrador em Computação VI - Grupo 1
+Trabalho de Conclusão de Curso
 
 ### Comandos de instalação do python3:
 
@@ -89,9 +89,9 @@ Se estiver invertido, rode:
 
 `find . -path "*/db.sqlite3" -delete`
 
-`python3 manage.py makemigrations`
+`python manage.py makemigrations`
 
-`python3 manage.py migrate`
+`python manage.py migrate`
 
 ### Comandos para criar banco de dados na plataforma Heroku:
 

@@ -1,0 +1,67 @@
+body {
+  background-color: #DCE6F1;
+}
+
+:root {
+  --bs-teal: #008080; /* azul-petróleo */
+}
+
+.fs-7 {
+  font-size: .75rem;
+}
+
+.btn-teal {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--bs-teal);
+  --bs-btn-border-color: var(--bs-teal);
+
+  /* Tons um pouco mais escuros para efeito hover/active */
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #006666;
+  --bs-btn-hover-border-color: #005959;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #005959;
+  --bs-btn-active-border-color: #004d4d;
+}
+
+/* Botão de edição do nome do dispositivo */
+.device-name-container {
+    position: relative;
+    height: 1.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.device-name, 
+.edit-input {
+    font-size: 1.25rem;
+    font-weight: bold;
+    margin: 0;
+}
+.edit-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: none;
+    padding: 0 .5rem;
+    height: 100%;
+}
+.edit-actions {
+    display: none;
+    gap: .5rem;
+    margin-bottom: .5rem;
+}
+.edit-icon, .delete-icon, .qrcode-icon {
+    transition: background-color 0.2s, color 0.2s;
+    border-radius: 50% !important;
+    padding: 6px;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.edit-icon:hover, .delete-icon:hover, .qrcode-icon:hover {
+    background-color: #ffffff !important; /* Bootstrap cinza claro */
+    cursor: pointer;
+}
