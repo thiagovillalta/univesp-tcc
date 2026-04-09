@@ -119,6 +119,7 @@ if IS_HEROKU_APP:
     database_url = os.environ.get("PGBOUNCER_URL") or os.environ.get("DATABASE_URL")
     DATABASES = {
         "default": dj_database_url.config(
+            default=database_url,
             conn_max_age=0,
             conn_health_checks=True,
             ssl_require=True,
