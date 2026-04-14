@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import os
 import secrets
+import ssl
 from pathlib import Path
 
 import dj_database_url
@@ -101,13 +102,17 @@ REDIS_URL = os.environ.get("REDIS_URL")
 
 if REDIS_URL:
     CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": {
-                "hosts": [REDIS_URL],
-            },
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [{
+                "address": REDIS_URL,
+                "ssl": REDIS_URL.startswith("rediss://"),
+                "ssl_cert_reqs": ssl.CERT_NONE,
+            }],
         },
-    }
+    },
+}
 else:
     # fallback para desenvolvimento local
     CHANNEL_LAYERS = {
