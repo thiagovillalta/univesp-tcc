@@ -104,28 +104,19 @@ ASGI_APPLICATION = "univesp_tcc.asgi.application"
 REDIS_URL = os.environ.get("REDIS_URL")
 
 if REDIS_URL:
-    redis_url = urlparse(REDIS_URL)
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
             "CONFIG": {
-                "hosts": [{
-                    "address": f"redis://{redis_url.hostname}:{redis_url.port}",
-                    "password": redis_url.password,
-                    "ssl": True,
-                    "ssl_cert_reqs": ssl.CERT_NONE,
-                }],
+                "hosts": [
+                    {
+                        "address": REDIS_URL,  # ❌ Passava a URL inteira
+                        "ssl": True,
+                    }
+                ],
             },
         },
     }
-else:
-    # fallback local (sem Redis)
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels.layers.InMemoryChannelLayer",
-        },
-    }
-
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
