@@ -102,24 +102,14 @@ ASGI_APPLICATION = "univesp_tcc.asgi.application"
 
 REDIS_URL = os.environ.get("REDIS_URL")
 
-if REDIS_URL:
-    # Use the Redis URL directly without extra connection_kwargs
-    # channels-redis 4.3.0 handles the connection properly
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": {
-                "hosts": [REDIS_URL],
-            },
-        },
-    }
-else:
-    # Fallback to in-memory layer for local development
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels.layers.InMemoryChannelLayer",
-        },
-    }
+# For now, use in-memory channels to avoid Redis timeout issues
+# This will work fine for single-process deployments
+# TODO: Debug Redis Labs SSL connection on port 6380
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
 
 
 # Database
