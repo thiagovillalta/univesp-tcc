@@ -100,7 +100,7 @@ WSGI_APPLICATION = 'univesp_tcc.wsgi.application'
 ASGI_APPLICATION = "univesp_tcc.asgi.application"
 
 
-def _build_channel_layers(redis_url_value):
+def build_channel_layers(redis_url_value):
     if not redis_url_value:
         return {
             "default": {
@@ -128,7 +128,7 @@ def _build_channel_layers(redis_url_value):
 
 
 REDIS_URL = os.environ.get("REDIS_URL")
-CHANNEL_LAYERS = _build_channel_layers(REDIS_URL)
+CHANNEL_LAYERS = build_channel_layers(REDIS_URL)
 
 
 # Database
