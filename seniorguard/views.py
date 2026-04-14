@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST, require_GET
 from django.utils import timezone
 from django.db import connection
 from asgiref.sync import async_to_sync
-from channels.db import database_sync_to_async
+
 from channels.layers import get_channel_layer
 from collections import defaultdict
 from datetime import timedelta
@@ -67,7 +67,7 @@ def dashboard(request, id):
     })
 
 @csrf_exempt
-@database_sync_to_async
+@require_POST
 def update(request):
     """
     Recebe dados de sensores de um device.
@@ -91,14 +91,21 @@ def update(request):
     connection.close()
     updated_now = (timezone.now() - device.updated_at).total_seconds() < 60
     channel_layer = get_channel_layer() # notificar via websocket
-    async_to_sync(channel_layer.group_send)(
-        f"dashboard_{device.mac_address.replace(':','-')}",
-        {
-            "type": "device_update",
-            "updated_now": updated_now,
-            "updated_at": device.updated_at.isoformat()
-        }
-    )
+
+    # Notificar via websocket (com error handling)
+    channel_layer = get_channel_layer()
+    if channel_layer:
+        try:
+            async_to_sync(channel_layer.group_send)(
+            f"dashboard_{device.mac_address.replace(':','-')}",
+            {
+                "type": "device_update",
+                "updated_now": updated_now,
+                "updated_at": device.updated_at.isoformat()
+            }
+        )
+        except Exception as e:
+            print(f"Warning: Could not send device update via WebSocket: {e}")
 
     # Salva dados dos sensores (mantendo histórico de 12h)
     from datetime import timedelta
@@ -126,14 +133,19 @@ def update(request):
             connection.close()
 
             channel_layer = get_channel_layer() # notificar via websocket
-            async_to_sync(channel_layer.group_send)(
-                f"dashboard_{device.mac_address.replace(':','-')}",
-                {
-                    "type": "sensor_update",
-                    "sensor_type": sensor_type.name,
-                    "value": value,
-                }
-            )
+             # Notificar via websocket (com error handling)
+            if channel_layer:
+                try:
+                    async_to_sync(channel_layer.group_send)(
+                        f"dashboard_{device.mac_address.replace(':','-')}",
+                        {
+                            "type": "sensor_update",
+                            "sensor_type": sensor_type.name,
+                            "value": value,
+                        }
+                        )
+                except Exception as e:
+                        print(f"Warning: Could not send sensor update via WebSocket: {e}")
 
     # Monta resposta com valores e intervalos válidos (apenas o dado mais recente de cada sensor)
     sensors = Sensor.objects.filter(device=device).order_by('sensor_type', '-created_at')
