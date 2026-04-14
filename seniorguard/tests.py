@@ -48,3 +48,9 @@ class ChannelLayerSettingsTests(SimpleTestCase):
         self.assertEqual(host_config["address"], "rediss://redis-host.example.com:6380")
         self.assertNotIn("username", host_config)
         self.assertNotIn("password", host_config)
+
+    def test_build_channel_layers_uses_default_port_for_redis_scheme(self):
+        channel_layers = build_channel_layers("redis://redis-host.example.com")
+        host_config = channel_layers["default"]["CONFIG"]["hosts"][0]
+
+        self.assertEqual(host_config["address"], "redis://redis-host.example.com:6379")
