@@ -67,3 +67,10 @@ class ChannelLayerSettingsTests(SimpleTestCase):
 
         self.assertEqual(host_config["username"], "default")
         self.assertNotIn("password", host_config)
+
+    def test_build_channel_layers_handles_password_without_username(self):
+        channel_layers = build_channel_layers("rediss://:dummy@redis-host.example.com")
+        host_config = channel_layers["default"]["CONFIG"]["hosts"][0]
+
+        self.assertEqual(host_config["username"], "")
+        self.assertEqual(host_config["password"], "dummy")
