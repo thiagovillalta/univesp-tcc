@@ -113,7 +113,7 @@ def build_channel_layers(redis_url_value):
     hostname = redis_url.hostname or "localhost"
     port = redis_url.port or default_port
     host_config = {
-        "address": f"{redis_url.scheme}://{hostname}:{port}{redis_url.path or ''}",
+        "address": f"{redis_url.scheme}://{hostname}:{port}{redis_url.path}",
     }
     if redis_url.username is not None:
         host_config["username"] = redis_url.username
