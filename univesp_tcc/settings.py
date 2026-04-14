@@ -103,22 +103,13 @@ ASGI_APPLICATION = "univesp_tcc.asgi.application"
 REDIS_URL = os.environ.get("REDIS_URL")
 
 if REDIS_URL:
-    # Use the Redis URL with proper connection pooling and timeouts
+    # Use the Redis URL directly without extra connection_kwargs
+    # channels-redis 4.3.0 handles the connection properly
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
             "CONFIG": {
                 "hosts": [REDIS_URL],
-                # Add connection pooling parameters to prevent timeouts
-                "connection_kwargs": {
-                    "socket_connect_timeout": 5,  # 5 seconds to connect
-                    "socket_timeout": 5,          # 5 seconds for operations
-                    "socket_keepalive": True,
-                    "socket_keepalive_options": {
-                        1: 1,  # TCP_KEEPIDLE
-                        2: 1,  # TCP_KEEPINTVL
-                    },
-                },
             },
         },
     }
