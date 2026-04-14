@@ -14,13 +14,15 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'univesp_tcc.settings')
 from channels.auth import AuthMiddlewareStack
 from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
-#import seniorguard.routing  # seu arquivo de routing
+
+from seniorguard.routing import websocket_urlpatterns
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
+
     "websocket": AuthMiddlewareStack(
         URLRouter(
-            #seniorguard.routing.websocket_urlpatterns
+            websocket_urlpatterns
         )
     ),
 })
