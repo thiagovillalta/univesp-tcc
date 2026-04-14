@@ -100,23 +100,27 @@ TEMPLATES = [
 WSGI_APPLICATION = 'univesp_tcc.wsgi.application'
 ASGI_APPLICATION = "univesp_tcc.asgi.application"
 
-
 REDIS_URL = os.environ.get("REDIS_URL")
 
 if REDIS_URL:
+    # Use the Redis URL directly with rediss:// scheme
+    # This handles SSL automatically without passing ssl parameter
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
             "CONFIG": {
-                "hosts": [
-                    {
-                        "address": REDIS_URL,  # ❌ Passava a URL inteira
-                        "ssl": True,
-                    }
-                ],
+                "hosts": [REDIS_URL],
             },
         },
     }
+else:
+    # Fallback to in-memory layer for local development
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer",
+        },
+    }
+
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
