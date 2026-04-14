@@ -12,8 +12,6 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import os
 import secrets
-import ssl
-from urllib.parse import urlparse
 
 from pathlib import Path
 
@@ -103,21 +101,27 @@ ASGI_APPLICATION = "univesp_tcc.asgi.application"
 
 REDIS_URL = os.environ.get("REDIS_URL")
 
-redis_url = urlparse(REDIS_URL)
-
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [{
-                "address": f"redis://{redis_url.hostname}:{redis_url.port}",
-                "password": redis_url.password,
-                "ssl": True,
-                "ssl_cert_reqs": ssl.CERT_NONE,  # importante na Heroku
-            }],
+if REDIS_URL:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [
+                    {
+                        "address": REDIS_URL,
+                        "ssl": True,
+                    }
+                ],
+            },
         },
-    },
-}
+    }
+else:
+    # fallback local (sem Redis)
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer",
+        },
+    }
 
 
 # Database
