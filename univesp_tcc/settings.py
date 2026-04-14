@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import os
 import secrets
+import urllib.parse
 from pathlib import Path
 
 import dj_database_url
@@ -100,11 +101,17 @@ ASGI_APPLICATION = "univesp_tcc.asgi.application"
 
 REDIS_URL = os.environ.get("REDIS_URL")
 
+redis_url = urllib.parse.urlparse(REDIS_URL)
+
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [REDIS_URL],
+            "hosts": [{
+                "address": (redis_url.hostname, redis_url.port),
+                "password": redis_url.password,
+                "ssl": True,  # 🔥 ESSENCIAL
+            }],
         },
     },
 }
