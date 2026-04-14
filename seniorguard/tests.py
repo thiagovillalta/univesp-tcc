@@ -54,3 +54,16 @@ class ChannelLayerSettingsTests(SimpleTestCase):
         host_config = channel_layers["default"]["CONFIG"]["hosts"][0]
 
         self.assertEqual(host_config["address"], "redis://redis-host.example.com:6379")
+
+    def test_build_channel_layers_preserves_database_path(self):
+        channel_layers = build_channel_layers("rediss://default:dummy@redis-host.example.com/1")
+        host_config = channel_layers["default"]["CONFIG"]["hosts"][0]
+
+        self.assertEqual(host_config["address"], "rediss://redis-host.example.com:6380/1")
+
+    def test_build_channel_layers_handles_username_without_password(self):
+        channel_layers = build_channel_layers("rediss://default@redis-host.example.com")
+        host_config = channel_layers["default"]["CONFIG"]["hosts"][0]
+
+        self.assertEqual(host_config["username"], "default")
+        self.assertNotIn("password", host_config)
