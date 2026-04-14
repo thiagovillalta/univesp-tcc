@@ -97,16 +97,24 @@ TEMPLATES = [
 WSGI_APPLICATION = 'univesp_tcc.wsgi.application'
 ASGI_APPLICATION = "univesp_tcc.asgi.application"
 
-REDIS_URL = os.environ.get("REDISCLOUD_URL", "redis://localhost:6379")
+REDIS_URL = os.environ.get("REDIS_URL")
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [REDIS_URL],
+if REDIS_URL:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [REDIS_URL],
+            },
         },
-    },
-}
+    }
+else:
+    # fallback para desenvolvimento local
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer",
+        },
+    }
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
