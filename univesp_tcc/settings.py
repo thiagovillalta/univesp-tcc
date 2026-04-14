@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import os
 import secrets
-import ssl
 from urllib.parse import urlparse
 
 from pathlib import Path
@@ -101,30 +100,35 @@ WSGI_APPLICATION = 'univesp_tcc.wsgi.application'
 ASGI_APPLICATION = "univesp_tcc.asgi.application"
 
 
-REDIS_URL = os.environ.get("REDIS_URL")
+def _build_channel_layers(redis_url_value):
+    if not redis_url_value:
+        return {
+            "default": {
+                "BACKEND": "channels.layers.InMemoryChannelLayer",
+            },
+        }
 
-if REDIS_URL:
-    redis_url = urlparse(REDIS_URL)
-    CHANNEL_LAYERS = {
+    redis_url = urlparse(redis_url_value)
+    host_config = {
+        "address": f"{redis_url.scheme}://{redis_url.hostname}:{redis_url.port}{redis_url.path or ''}",
+    }
+    if redis_url.username:
+        host_config["username"] = redis_url.username
+    if redis_url.password:
+        host_config["password"] = redis_url.password
+
+    return {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
             "CONFIG": {
-                "hosts": [{
-                    "address": f"redis://{redis_url.hostname}:{redis_url.port}",
-                    "password": redis_url.password,
-                    "ssl": True,
-                    "ssl_cert_reqs": ssl.CERT_NONE,
-                }],
+                "hosts": [host_config],
             },
         },
     }
-else:
-    # fallback local (sem Redis)
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels.layers.InMemoryChannelLayer",
-        },
-    }
+
+
+REDIS_URL = os.environ.get("REDIS_URL")
+CHANNEL_LAYERS = _build_channel_layers(REDIS_URL)
 
 
 # Database
