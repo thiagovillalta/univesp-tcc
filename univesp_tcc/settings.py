@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import os
 import secrets
-from urllib.parse import urlparse
 
 from pathlib import Path
 
@@ -100,38 +99,11 @@ WSGI_APPLICATION = 'univesp_tcc.wsgi.application'
 ASGI_APPLICATION = "univesp_tcc.asgi.application"
 
 
-def build_channel_layers(redis_url_value):
-    if not redis_url_value:
-        return {
-            "default": {
-                "BACKEND": "channels.layers.InMemoryChannelLayer",
-            },
-        }
-
-    redis_url = urlparse(redis_url_value)
-    default_port = 6380 if redis_url.scheme == "rediss" else 6379
-    hostname = redis_url.hostname or "localhost"
-    port = redis_url.port or default_port
-    host_config = {
-        "address": f"{redis_url.scheme}://{hostname}:{port}{redis_url.path or ''}",
-    }
-    if redis_url.username is not None:
-        host_config["username"] = redis_url.username
-    if redis_url.password is not None:
-        host_config["password"] = redis_url.password
-
-    return {
-        "default": {
-            "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": {
-                "hosts": [host_config],
-            },
-        },
-    }
-
-
-REDIS_URL = os.environ.get("REDIS_URL")
-CHANNEL_LAYERS = build_channel_layers(REDIS_URL)
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
 
 
 # Database
