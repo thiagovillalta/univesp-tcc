@@ -76,6 +76,7 @@ Se estiver invertido, rode:
 
 ### Comandos para aplicar o pgbouncer buildpack
 
+`heroku git:remote -a seniorguard`
 `git push heroku main`
 `heroku restart -a seniorguard`
 
@@ -103,8 +104,8 @@ Se estiver invertido, rode:
 
 ### Comandos de debug na Heroku:
 
-`heroku logs --tail --app seniorguard`
+`heroku logs --tail -a seniorguard`
 
-`heroku pg:psql --app seniorguard`
+`heroku pg:psql -a seniorguard`
 
 `SELECT * FROM seniorguard_sensor WHERE seniorguard_sensor.device_id = 'XX:XX:XX:XX:XX:XX' and seniorguard_sensor.sensor_type_id = 'rndA';`
