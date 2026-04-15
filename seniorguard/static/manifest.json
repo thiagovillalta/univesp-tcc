@@ -1,7 +1,27 @@
 {
-    "icons": [
-      { "src": "/static/imagens/icon-192.png", "type": "image/png", "sizes": "192x192" },
-      { "src": "/static/imagens/icon-mask.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" },
-      { "src": "/static/imagens/icon-512.png", "type": "image/png", "sizes": "512x512" }
-    ]
+  "name": "SeniorGuard",
+  "short_name": "SeniorGuard",
+  "start_url": "https://seniorguard-e9f804df1bc7.herokuapp.com",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0d6efd",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/static/imagens/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/static/imagens/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "/static/imagens/icon-mask.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ]
 }
